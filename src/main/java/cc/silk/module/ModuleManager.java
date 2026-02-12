@@ -61,11 +61,11 @@ public final class ModuleManager {
         add(new Sprint(), new AutoFirework(), new AutoHeadHitter(), new KeepSprint(), new SnapTap());
 
         // Player
-        add(
-              
-                new AutoDrain(), 
-                new AutoTool(),
-                new FastPlace());
+       add(
+                new AutoExtinguish(), new AutoTool(), new AutoWeb(), new AutoRefill(),
+                new AutoDrain(), new AutoCrafter(), new FastPlace(), new FastEXP(),
+                new TrapSave(), new PingSpoof(), new AutoDoubleHand(),
+                new AutoMLG(), new FastMine(), new ReBuffNotifier(), new CoverUp());
 
         // Render
         add(       new ArrayList(),  new BlurTest(), new AspectRatio());
