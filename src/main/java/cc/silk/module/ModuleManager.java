@@ -64,7 +64,8 @@ public final class ModuleManager {
         add(
               
                 new AutoDrain(), 
-                new PingSpoof());
+                new AutoTool(),
+                new FastPlace());
 
         // Render
         add(       new ArrayList(),  new BlurTest(), new AspectRatio());
