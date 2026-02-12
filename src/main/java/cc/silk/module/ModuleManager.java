@@ -62,14 +62,14 @@ public final class ModuleManager {
 
         // Player
        add(
-                new AutoExtinguish(), new AutoTool(), new AutoWeb(), new AutoRefill(),
-                new AutoDrain(), new AutoCrafter(), new FastPlace(), new FastEXP(),
-                new TrapSave(), new PingSpoof(), new AutoDoubleHand(),
-                new AutoMLG(), new FastMine(), new ReBuffNotifier(), new CoverUp());
+           new AutoDrain(), new FastEXP());
 
         // Render
-        add(       new ArrayList(),  new BlurTest(), new AspectRatio());
-
+        add(   
+                new ContainerSlots(), new FullBright(), new Watermark(), new TargetHUD(),
+                new SwingSpeed(),
+                new Notifications(), new ArrowESP(), new OutlineESP(), new CustomOutlineESP(), new ESP2D(), new ESP3D(), new TargetESP(),
+                new ArrayList(), new Trajectories(), new BlurTest(), new AspectRatio(), new Nametags());
         // Misc
         add(
                 new MiddleClickFriend(),
