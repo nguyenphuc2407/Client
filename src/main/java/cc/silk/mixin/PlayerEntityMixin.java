@@ -1,8 +1,6 @@
 package cc.silk.mixin;
-
 import cc.silk.SilkClient;
 import cc.silk.module.modules.movement.KeepSprint;
-import cc.silk.module.modules.player.FastMine;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
