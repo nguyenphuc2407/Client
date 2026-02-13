@@ -63,14 +63,12 @@ public final class ModuleManager {
 
         // Player
        add(
-           new PingSpoof(), new AutoDrain(), new FastEXP());
+                new AutoDrain(), new FastEXP());
 
         // Render
         add(   
-                new ContainerSlots(), new FullBright(), new Watermark(), new TargetHUD(),
-                new SwingSpeed(),
-                new Notifications(), new ArrowESP(), new OutlineESP(), new CustomOutlineESP(), new ESP2D(), new ESP3D(), new TargetESP(),
-                new ArrayList(), new Trajectories(), new BlurTest(), new AspectRatio(), new Nametags());
+                new ContainerSlots(), 
+                new ArrayList());
         // Misc
         add(
                 new MiddleClickFriend());
