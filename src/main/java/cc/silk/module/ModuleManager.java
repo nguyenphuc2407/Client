@@ -67,11 +67,11 @@ public final class ModuleManager {
 
         // Render
         add(   
-                new ContainerSlots());
+                new ArrayList(), new ContainerSlots());
         // Misc
         add(
                 new MiddleClickFriend(),
-                new Friends());
+                new HoverTotem(), new Friends());
 
         // Client
         add(new NewClickGUIModule(), new ClientSettingsModule(), new Client(), new Debugger(),
