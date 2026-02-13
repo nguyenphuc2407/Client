@@ -1,6 +1,4 @@
 package cc.silk.mixin;
-
-import cc.silk.module.modules.render.CustomOutlineESP;
 import cc.silk.utils.render.OutlinePostProcessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
