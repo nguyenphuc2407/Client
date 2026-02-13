@@ -6,198 +6,85 @@ import cc.silk.module.Category;
 import cc.silk.module.Module;
 import cc.silk.module.setting.BooleanSetting;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.item.Item;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
 
 public final class AutoCart extends Module {
 
     private final BooleanSetting autoSwitch = new BooleanSetting("Auto Switch", true);
 
-    private boolean isActive = false;
-    private BlockPos targetPos = null;
-    private int originalSlot = -1;
-    private int tickCounter = 0;
-    private boolean hasRail = false;
-    private boolean hasTntCart = false;
-
-    // thêm delay nhỏ cho TNT cart
-    private int smallCartDelay = 0; // delay counter
-    private final int SMALL_CART_DELAY_TICKS = 3; // delay bạn muốn (3 tick ≈ 0.15s)
+    private boolean wasUsingBow = false;
 
     public AutoCart() {
-        super("Auto Cart", "Places TNT minecarts on rails when shooting arrows", -1, Category.COMBAT);
-        this.addSettings(autoSwitch);
+        super("Auto Cart", "Places TNT cart when releasing bow and looking at rail", -1, Category.COMBAT);
+        addSettings(autoSwitch);
     }
 
     @EventHandler
-    private void onTickEvent(HandleInputEvent event) {
+    private void onTick(HandleInputEvent event) {
         if (isNull()) return;
 
-        if (mc.player.isUsingItem() && mc.player.getActiveItem().getItem() == Items.BOW) {
-            if (!isActive) {
-                startPlacing();
-            }
-        } else if (isActive && !mc.player.isUsingItem()) {
-            if (tickCounter == 0) {
-                tickCounter = 1;
-            }
-        }
+        boolean usingBow = mc.player.isUsingItem() &&
+                mc.player.getActiveItem().getItem() == Items.BOW;
 
-        if (!isActive) return;
-
-        if (tickCounter == 1) {
-            placeRail();
-            tickCounter = 2;
-        } 
-        else if (tickCounter == 2) {
-
-            // thêm delay nhỏ cho TNT cart
-            if (smallCartDelay < SMALL_CART_DELAY_TICKS) {
-                smallCartDelay++;
-                return;
-            }
-
-            placeTntCart();
-            stopPlacing();
-        }
-    }
-
-    private void startPlacing() {
-        if (isActive) return;
-
-        if (mc.player.getMainHandStack().getItem() != Items.BOW) {
+        // Khi đang giữ chuột để nạp cung
+        if (usingBow) {
+            wasUsingBow = true;
             return;
         }
 
-        BlockPos targetPos = getTargetPosition();
-        if (targetPos == null) return;
+        // Khi vừa thả chuột (nhả cung)
+        if (wasUsingBow && !usingBow) {
+            wasUsingBow = false;
 
-        this.targetPos = targetPos;
-        isActive = true;
-        tickCounter = 0;
-        originalSlot = mc.player.getInventory().selectedSlot;
-    }
-
-    private void stopPlacing() {
-        if (!isActive) return;
-
-        if (autoSwitch.getValue() && originalSlot != -1) {
-            mc.player.getInventory().selectedSlot = originalSlot;
+            // Kiểm tra xem có nhìn thấy rail không
+            if (isLookingAtRail()) {
+                placeTntCart();
+            }
         }
-
-        resetState();
     }
 
-    private void resetState() {
-        isActive = false;
-        targetPos = null;
-        originalSlot = -1;
-        tickCounter = 0;
-        hasRail = false;
-        hasTntCart = false;
+    private boolean isLookingAtRail() {
+        if (mc.crosshairTarget == null) return false;
+        if (mc.crosshairTarget.getType() != HitResult.Type.BLOCK) return false;
 
-        // reset delay cart
-        smallCartDelay = 0;
-    }
+        BlockHitResult hit = (BlockHitResult) mc.crosshairTarget;
+        Block block = mc.world.getBlockState(hit.getBlockPos()).getBlock();
 
-    private void placeRail() {
-        if (hasRail) return;
-
-        int railSlot = findAnyRailInHotbar();
-        if (railSlot == -1) return;
-
-        mc.player.getInventory().selectedSlot = railSlot;
-        ((MinecraftClientAccessor) mc).invokeDoItemUse();
-        hasRail = true;
+        return block == Blocks.RAIL ||
+               block == Blocks.POWERED_RAIL ||
+               block == Blocks.DETECTOR_RAIL ||
+               block == Blocks.ACTIVATOR_RAIL;
     }
 
     private void placeTntCart() {
-        if (hasTntCart) {
-            stopPlacing();
-            return;
-        }
+        int tntSlot = findTntCart();
+        if (tntSlot == -1) return;
 
-        int tntCartSlot = findItemInHotbar();
-        if (tntCartSlot == -1) return;
+        int oldSlot = mc.player.getInventory().selectedSlot;
 
-        mc.player.getInventory().selectedSlot = tntCartSlot;
+        // Auto switch
+        if (autoSwitch.getValue())
+            mc.player.getInventory().selectedSlot = tntSlot;
+
+        // Đặt TNT cart
         ((MinecraftClientAccessor) mc).invokeDoItemUse();
-        hasTntCart = true;
+
+        // Trả slot cũ
+        if (autoSwitch.getValue())
+            mc.player.getInventory().selectedSlot = oldSlot;
     }
 
-    private BlockPos getTargetPosition() {
-        HitResult hitResult = mc.crosshairTarget;
-        if (hitResult == null) return null;
-
-        if (hitResult.getType() == HitResult.Type.BLOCK) {
-            BlockHitResult blockHit = (BlockHitResult) hitResult;
-            return blockHit.getBlockPos().offset(blockHit.getSide());
-        } 
-        else if (hitResult.getType() == HitResult.Type.ENTITY) {
-            return mc.player.getBlockPos().add(0, 1, 0);
-        } 
-        else {
-            Vec3d cameraPos = mc.player.getCameraPosVec(1.0f);
-            Vec3d rotation = mc.player.getRotationVec(1.0f);
-            Vec3d end = cameraPos.add(rotation.multiply(5.0));
-
-            BlockHitResult blockHit = mc.world.raycast(new RaycastContext(
-                cameraPos, end, 
-                RaycastContext.ShapeType.OUTLINE, 
-                RaycastContext.FluidHandling.NONE, 
-                mc.player
-            ));
-
-            if (blockHit != null) {
-                return blockHit.getBlockPos().offset(blockHit.getSide());
-            } else {
-                return mc.player.getBlockPos().add(0, 1, 0);
-            }
-        }
-    }
-
-    private int findItemInHotbar() {
+    private int findTntCart() {
         for (int i = 0; i < 9; i++) {
             ItemStack stack = mc.player.getInventory().getStack(i);
-            if (!stack.isEmpty() && stack.getItem() == Items.TNT_MINECART) {
+            if (!stack.isEmpty() && stack.getItem() == Items.TNT_MINECART)
                 return i;
-            }
         }
         return -1;
-    }
-
-    private int findAnyRailInHotbar() {
-        for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
-            if (!stack.isEmpty() && isRail(stack.getItem())) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private boolean isRail(Item item) {
-        return item == Items.RAIL ||
-               item == Items.POWERED_RAIL ||
-               item == Items.DETECTOR_RAIL ||
-               item == Items.ACTIVATOR_RAIL;
-    }
-
-    @Override
-    public void onEnable() {
-        resetState();
-    }
-
-    @Override
-    public void onDisable() {
-        if (isActive) {
-            stopPlacing();
-        }
     }
 }
