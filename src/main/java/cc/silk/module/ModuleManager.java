@@ -56,13 +56,14 @@ public final class ModuleManager {
     private void addModules() {
         // Combat
         add(
-                new AutoCart(),new XbowCart());
+           new HitCob(), new StunCob(), new KeyLava(), new TriggerBot(), new AutoCart(),new XbowCart());
         // Movement
-        add(new Sprint(), new AutoFirework(), new AutoHeadHitter(), new KeepSprint(), new SnapTap());
+        add( 
+           new Sprint(), new AutoFirework(), new AutoHeadHitter(), new KeepSprint(), new SnapTap());
 
         // Player
        add(
-           new AutoDrain(), new FastEXP());
+           new PingSpoof(), new AutoDrain(), new AutoWeb(), new CoverUp(), new FastEXP());
 
         // Render
         add(   
