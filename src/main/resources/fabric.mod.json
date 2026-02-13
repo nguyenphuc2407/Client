@@ -1,17 +1,16 @@
 {
   "schemaVersion": 1,
-  "id": "lithium",
-  "version": "0.15.3+mc1.21.4",
-  "name": "Lithium",
-  "description": "Lithium is a free and open-source optimization mod for Minecraft which makes a wide range of performance improvements to the game.",
-    "authors": [
-      "JellySquid",
-      "2No2Name"
-    ],
-    "contact": {
-      "homepage": "https://jellysquid.me/projects/",
-      "sources": "https://github.com/CaffeineMC/lithium-fabric",
-      "issues": "https://github.com/CaffeineMC/lithium-fabric/issues"
+  "id": "zoomify",
+  "version": "2.15.2+1.21.5",
+  "name": "Zoomify",
+  "description": "A zoom mod with infinite customizability.",
+   "authors": [
+    "isXander"
+  ],
+  "contact": {
+    "homepage": "https://isxander.dev",
+    "issues": "https://github.com/isXander/Zoomify/issues",
+    "sources": "https://github.com/isXander/Zoomify"
   },
   "license": "CC0-1.0",
   "icon": "assets/silk/icon.png",
