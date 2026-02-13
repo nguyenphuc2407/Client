@@ -1,8 +1,4 @@
 package cc.silk.mixin;
-
-import cc.silk.module.modules.combat.Hitboxes;
-import cc.silk.module.modules.combat.HitboxHelper;
-import cc.silk.module.modules.render.OutlineESP;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
