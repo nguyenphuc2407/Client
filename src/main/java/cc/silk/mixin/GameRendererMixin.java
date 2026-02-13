@@ -1,8 +1,6 @@
 package cc.silk.mixin;
-
 import cc.silk.SilkClient;
 import cc.silk.event.impl.render.Render3DEvent;
-import cc.silk.module.modules.render.AspectRatio;
 import cc.silk.utils.render.W2SUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
