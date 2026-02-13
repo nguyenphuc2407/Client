@@ -4,7 +4,6 @@ import cc.silk.module.Category;
 import cc.silk.module.Module;
 import cc.silk.gui.newgui.components.CategoryPanel;
 import cc.silk.gui.newgui.components.ConfigPanel;
-import cc.silk.gui.FriendsScreen;
 import cc.silk.gui.effects.SnowEffect;
 import cc.silk.utils.render.nanovg.NanoVGRenderer;
 import cc.silk.utils.render.GuiGlowHelper;
