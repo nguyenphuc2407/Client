@@ -6,6 +6,6 @@ import cc.silk.module.Module;
 public class Secret extends Module {
 
     public Secret() {
-        super("Phuc Nguyen", "Nguyen Dep Trai Vl Tiktok npnchill", 0, Category.CLIENT);
+        super("Phuc Nguyen", "TikTok: npnchill", 0, Category.CLIENT);
     }
 }
