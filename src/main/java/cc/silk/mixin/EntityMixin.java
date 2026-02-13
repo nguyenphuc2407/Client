@@ -1,4 +1,5 @@
 package cc.silk.mixin;
+
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -25,21 +26,15 @@ public abstract class EntityMixin {
     @Shadow protected abstract void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPosition);
     @Shadow public abstract EntityDimensions getDimensions(net.minecraft.entity.EntityPose pose);
 
+    // XOÁ OutlineESP hook
     @Inject(method = "isGlowing", at = @At("HEAD"), cancellable = true)
     private void onIsGlowing(CallbackInfoReturnable<Boolean> cir) {
-        OutlineESP outlineESP = OutlineESP.getInstance();
-        if (outlineESP != null && outlineESP.isEnabled()) {
-            Entity self = (Entity) (Object) this;
-            if (outlineESP.shouldEntityGlow(self)) {
-                cir.setReturnValue(true);
-            }
-        }
-       
+        // Không làm gì (xoá ESP hoàn toàn)
     }
 
     @Inject(method = "getTeamColorValue", at = @At("HEAD"))
     private void onGetTeamColorValue(CallbackInfoReturnable<Integer> cir) {
-      
+        // để trống
     }
 
     @Inject(method = "move", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;isRemoved()Z"))
@@ -51,19 +46,9 @@ public abstract class EntityMixin {
         }
     }
 
+    // XOÁ HitboxHelper + Hitboxes expansion
     @Inject(method = "getBoundingBox", at = @At("RETURN"), cancellable = true)
     private void onGetBoundingBox(CallbackInfoReturnable<Box> cir) {
-        if (!HitboxHelper.isRaycasting()) return;
-        
-        Entity self = (Entity) (Object) this;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        
-        if (mc.player != null && self instanceof PlayerEntity && self != mc.player) {
-            float expansion = Hitboxes.getExpansion();
-            if (expansion > 0) {
-                Box originalBox = cir.getReturnValue();
-                cir.setReturnValue(originalBox.expand(expansion));
-            }
-        }
+        // Không chỉnh hitbox nữa
     }
 }
