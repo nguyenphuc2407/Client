@@ -73,8 +73,7 @@ public final class ModuleManager {
                 new ArrayList(), new Trajectories(), new BlurTest(), new AspectRatio(), new Nametags());
         // Misc
         add(
-                new MiddleClickFriend(),
-                new Friends());
+                new MiddleClickFriend());
 
         // Client
         add(    
