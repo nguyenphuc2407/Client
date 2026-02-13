@@ -1,6 +1,4 @@
 package cc.silk.mixin;
-
-import cc.silk.module.modules.combat.HitboxHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.util.hit.EntityHitResult;
