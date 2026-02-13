@@ -1,12 +1,17 @@
 {
   "schemaVersion": 1,
-  "id": "silk",
-  "version": "1.0.5+mc1.21",
-  "name": "Motion Blur",
-  "description": "A Motion Blur Mod for Fabric, based on Satin API.",
-  "contact": {
-    "sources": "https://github.com/Noryea/motionblur-fabric",
-    "issues": "https://github.com/Noryea/motionblur-fabric/issues"
+  "id": "lithium",
+  "version": "0.15.3+mc1.21.4",
+  "name": "Lithium",
+  "description": "Lithium is a free and open-source optimization mod for Minecraft which makes a wide range of performance improvements to the game.",
+    "authors": [
+      "JellySquid",
+      "2No2Name"
+    ],
+    "contact": {
+      "homepage": "https://jellysquid.me/projects/",
+      "sources": "https://github.com/CaffeineMC/lithium-fabric",
+      "issues": "https://github.com/CaffeineMC/lithium-fabric/issues"
   },
   "license": "CC0-1.0",
   "icon": "assets/silk/icon.png",
