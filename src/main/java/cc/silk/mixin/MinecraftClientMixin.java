@@ -29,17 +29,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin implements IMinecraft {
 
-    @Shadow
-    public ClientWorld world;
-    @Shadow
-    public HitResult crosshairTarget;
-    @Shadow
-    public ClientPlayerEntity player;
-    @Shadow
-    public ClientPlayerInteractionManager interactionManager;
-    @Shadow
-    @Final
-    private RenderTickCounter.Dynamic renderTickCounter;
+    @Shadow public ClientWorld world;
+    @Shadow public HitResult crosshairTarget;
+    @Shadow public ClientPlayerEntity player;
+    @Shadow public ClientPlayerInteractionManager interactionManager;
+    @Shadow @Final private RenderTickCounter.Dynamic renderTickCounter;
 
     @Inject(method = "getWindowTitle", at = @At("HEAD"), cancellable = true)
     public void setTitle(CallbackInfoReturnable<String> cir) {
@@ -65,8 +59,7 @@ public class MinecraftClientMixin implements IMinecraft {
     @Inject(method = "handleInputEvents", at = @At("HEAD"))
     public void silk$handleInputEvents(CallbackInfo ci) {
         if (SilkClient.INSTANCE != null) {
-            HandleInputEvent event = new HandleInputEvent();
-            SilkClient.INSTANCE.getSilkEventBus().post(event);
+            SilkClient.INSTANCE.getSilkEventBus().post(new HandleInputEvent());
         }
     }
 
@@ -81,37 +74,34 @@ public class MinecraftClientMixin implements IMinecraft {
         var optionalClickGuiModule = SilkClient.INSTANCE.getModuleManager().getModule(ClickGUIModule.class);
         if (optionalClickGuiModule.isPresent()) {
             ClickGUIModule clickGuiModule = optionalClickGuiModule.get();
-            if (clickGuiModule.isEnabled() && SilkClient.mc.currentScreen == null && world != null) {
+
+            if (clickGuiModule.isEnabled()
+                    && SilkClient.mc.currentScreen == null
+                    && world != null) {
                 SilkClient.mc.setScreen(new ClickGui());
             }
-            else if (!clickGuiModule.isEnabled() && SilkClient.mc.currentScreen instanceof ClickGui) {
+            else if (!clickGuiModule.isEnabled()
+                    && SilkClient.mc.currentScreen instanceof ClickGui) {
                 SilkClient.mc.setScreen(null);
             }
         }
     }
 
+    // ===============================
+    // FIX LỖI ANTIMISS (module không tồn tại)
+    // ===============================
     @Inject(method = "doAttack", at = @At("HEAD"), cancellable = true)
     public final void doAttackInject(CallbackInfoReturnable<Boolean> cir) {
-        try {
-            var antiMissOpt = SilkClient.INSTANCE.getModuleManager().getModule(cc.silk.module.modules.combat.AntiMiss.class);
-            if (antiMissOpt.isPresent() && antiMissOpt.get().isEnabled()) {
-                if (crosshairTarget == null || crosshairTarget.getType() == HitResult.Type.MISS) {
-                    cir.setReturnValue(false);
-                    return;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
 
-        DoAttackEvent event = new DoAttackEvent();
-        SilkClient.INSTANCE.getSilkEventBus().post(event);
+        // AntiMiss đã bị REMOVE → không check nữa
+        // Chỉ gửi event để module khác dùng
+        SilkClient.INSTANCE.getSilkEventBus().post(new DoAttackEvent());
     }
 
     @Inject(method = "stop", at = @At("HEAD"))
     public void stopInject(CallbackInfo ci) {
         if (SilkClient.INSTANCE != null) {
-            ProfileManager profileManager = SilkClient.INSTANCE.getProfileManager();
-            profileManager.saveProfile("default", true);
+            SilkClient.INSTANCE.getProfileManager().saveProfile("default", true);
         }
     }
 
@@ -121,15 +111,15 @@ public class MinecraftClientMixin implements IMinecraft {
             SilkClient.INSTANCE.getSilkEventBus().post(new WorldChangeEvent(newWorld));
         }
     }
+
     @Inject(method = "onDisconnected", at = @At("HEAD"))
     public final void onDisconnected(CallbackInfo ci) {
-        DisconnectEvent event = new DisconnectEvent();
-        SilkClient.INSTANCE.getSilkEventBus().post(event);
+        SilkClient.INSTANCE.getSilkEventBus().post(new DisconnectEvent());
     }
+
     @Inject(method = "doItemUse", at = @At("HEAD"), cancellable = true)
     public final void doItemUseInject(CallbackInfo ci) {
         ItemUseEvent event = new ItemUseEvent();
-
         SilkClient.INSTANCE.getSilkEventBus().post(event);
 
         if (event.isCancelled()) {
