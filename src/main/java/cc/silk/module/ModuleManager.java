@@ -71,7 +71,7 @@ public final class ModuleManager {
                 new ArrayList());
         // Misc
         add(
-                new MiddleClickFriend());
+                new CartKey());
 
         // Client
         add(    
