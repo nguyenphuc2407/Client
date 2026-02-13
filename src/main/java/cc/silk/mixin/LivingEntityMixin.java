@@ -1,7 +1,5 @@
-package cc.silk.mixin;
-
+ package cc.silk.mixin;
 import cc.silk.SilkClient;
-import cc.silk.module.modules.render.SwingSpeed;
 import net.minecraft.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
