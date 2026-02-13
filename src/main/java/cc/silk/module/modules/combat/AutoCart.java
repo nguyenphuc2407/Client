@@ -1,282 +1,203 @@
 package cc.silk.module.modules.combat;
 
-import cc.silk.event.impl.player.ItemUseEvent;
-import cc.silk.event.impl.player.TickEvent;
+import cc.silk.event.impl.input.HandleInputEvent;
 import cc.silk.mixin.MinecraftClientAccessor;
 import cc.silk.module.Category;
 import cc.silk.module.Module;
 import cc.silk.module.setting.BooleanSetting;
-import cc.silk.module.setting.ModeSetting;
-import cc.silk.module.setting.NumberSetting;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.block.BlockState;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 
-import java.util.ArrayList;
-import java.util.List;
+public final class AutoCart extends Module {
 
-public final class XbowCart extends Module {
+    private final BooleanSetting autoSwitch = new BooleanSetting("Auto Switch", true);
 
-    private final BooleanSetting manualMode = new BooleanSetting("Manual", false);
-    private final NumberSetting manualDelay = new NumberSetting("Manual Delay", 0, 10, 1, 1);
-    private final ModeSetting firstAction = new ModeSetting("First", "Fire", "Fire", "Rail", "None");
-    private final ModeSetting secondAction = new ModeSetting("Second", "Rail", "Fire", "Rail", "None");
-    private final ModeSetting thirdAction = new ModeSetting("Third", "None", "Fire", "Rail", "None");
-    private final NumberSetting delay = new NumberSetting("Delay", 0, 10, 2, 1);
-
-    private boolean active = false;
+    private boolean isActive = false;
+    private BlockPos targetPos = null;
+    private int originalSlot = -1;
     private int tickCounter = 0;
-    private int actionIndex = 0;
+    private boolean hasRail = false;
+    private boolean hasTntCart = false;
 
-    private final List<String> sequence = new ArrayList<>();
+    // thêm delay nhỏ cho TNT cart
+    private int smallCartDelay = 0; // delay counter
+    private final int SMALL_CART_DELAY_TICKS = 3; // delay bạn muốn (3 tick ≈ 0.15s)
 
-    // AUTO Rail → TNT logic
-    private int railPhase = 0;   // 0 = place rail, 1 = delay, 2 = TNT
-    private int railDelay = 0;   // countdown
-
-    // Manual mode
-    private int manualStep = 0;
-    private boolean shouldSwitch = false;
-    private boolean shouldExecute = false;
-    private int executeDelay = 0;
-
-    public XbowCart() {
-        super("Xbow Cart", "Rail → TNT Cart automation", -1, Category.COMBAT);
-        this.addSettings(manualMode, manualDelay, firstAction, secondAction, thirdAction, delay);
+    public AutoCart() {
+        super("Auto Cart", "Places TNT minecarts on rails when shooting arrows", -1, Category.COMBAT);
+        this.addSettings(autoSwitch);
     }
-
-    @Override
-    public void onEnable() {
-        if (isNull()) {
-            setEnabled(false);
-            return;
-        }
-
-        active = true;
-        tickCounter = 0;
-        actionIndex = 0;
-
-        railPhase = 0;
-        railDelay = 0;
-
-        if (!manualMode.getValue()) {
-            sequence.clear();
-            if (!firstAction.isMode("None")) sequence.add(firstAction.getMode());
-            if (!secondAction.isMode("None")) sequence.add(secondAction.getMode());
-            if (!thirdAction.isMode("None")) sequence.add(thirdAction.getMode());
-        } else {
-            manualStep = 0;
-            executeDelay = 0;
-            shouldExecute = false;
-            shouldSwitch = false;
-        }
-    }
-
-    /* ===========================================================
-       =====================  AUTO MODE  ==========================
-       =========================================================== */
 
     @EventHandler
-    private void onTick(TickEvent event) {
-        if (!active || isNull()) return;
+    private void onTickEvent(HandleInputEvent event) {
+        if (isNull()) return;
 
-        if (manualMode.getValue()) {
-            handleManualTick();
-        } else {
-            handleAutoTick();
-        }
-    }
-
-    private void handleAutoTick() {
-        if (actionIndex >= sequence.size()) {
-            switchToItem(Items.CROSSBOW);
-            active = false;
-            return;
-        }
-
-        String action = sequence.get(actionIndex);
-
-        // FIX CHÍNH: luôn chạy mỗi tick
-        executeAction(action);
-
-        tickCounter++;
-        if (tickCounter > delay.getValueInt()) {
-            tickCounter = 0;
-            actionIndex++;
-        }
-    }
-
-    /* ===========================================================
-       ==================  EXECUTE ACTION  ========================
-       =========================================================== */
-
-    private void executeAction(String action) {
-
-        /* ---------- FIRE ACTION ---------- */
-        if (action.equals("Fire")) {
-            if (switchToItem(Items.FLINT_AND_STEEL)) {
-                ((MinecraftClientAccessor) mc).invokeDoItemUse();
+        if (mc.player.isUsingItem() && mc.player.getActiveItem().getItem() == Items.BOW) {
+            if (!isActive) {
+                startPlacing();
             }
-            return;
+        } else if (isActive && !mc.player.isUsingItem()) {
+            if (tickCounter == 0) {
+                tickCounter = 1;
+            }
         }
 
-        /* ---------- RAIL → 2 TICK → TNT CART ---------- */
-        if (action.equals("Rail")) {
+        if (!isActive) return;
 
-            // STEP 1 — place rail
-            if (railPhase == 0) {
-                if (switchToItem(Items.RAIL) ||
-                    switchToItem(Items.POWERED_RAIL) ||
-                    switchToItem(Items.DETECTOR_RAIL) ||
-                    switchToItem(Items.ACTIVATOR_RAIL)) {
+        if (tickCounter == 1) {
+            placeRail();
+            tickCounter = 2;
+        } 
+        else if (tickCounter == 2) {
 
-                    ((MinecraftClientAccessor) mc).invokeDoItemUse();
-
-                    railPhase = 1;
-                    railDelay = 2;  // fixed 2 tick delay for TNT
-                }
+            // thêm delay nhỏ cho TNT cart
+            if (smallCartDelay < SMALL_CART_DELAY_TICKS) {
+                smallCartDelay++;
                 return;
             }
 
-            // STEP 2 — wait ticks
-            if (railPhase == 1) {
-                if (railDelay > 0) {
-                    railDelay--;
-                    return;
-                }
-                railPhase = 2;
-            }
-
-            // STEP 3 — place TNT minecart
-            if (railPhase == 2) {
-                if (switchToItem(Items.TNT_MINECART)) {
-                    ((MinecraftClientAccessor) mc).invokeDoItemUse();
-                }
-                railPhase = 0; // reset
-            }
+            placeTntCart();
+            stopPlacing();
         }
     }
 
-    /* ===========================================================
-       =====================  MANUAL MODE  ========================
-       =========================================================== */
+    private void startPlacing() {
+        if (isActive) return;
 
-    @EventHandler
-    private void onItemUse(ItemUseEvent event) {
-        if (!manualMode.getValue() || !active || isNull()) return;
-
-        ItemStack stack = mc.player.getMainHandStack();
-        if (stack.isEmpty()) return;
-
-        switch (manualStep) {
-            case 0:
-                if (isRailItem(stack.getItem())) {
-                    manualStep = 1;
-                    shouldSwitch = true;
-                }
-                break;
-            case 1:
-                if (stack.getItem() == Items.TNT_MINECART) {
-                    manualStep = 2;
-                    shouldSwitch = true;
-                }
-                break;
-            case 2:
-                if (stack.getItem() == Items.FLINT_AND_STEEL) {
-                    manualStep = 3;
-                    shouldSwitch = true;
-                }
-                break;
-            case 3:
-                if (isRailItem(stack.getItem())) {
-                    manualStep = 1;
-                    shouldSwitch = true;
-                }
-                break;
-        }
-    }
-
-    private void handleManualTick() {
-        if (executeDelay > 0) {
-            executeDelay--;
+        if (mc.player.getMainHandStack().getItem() != Items.BOW) {
             return;
         }
 
-        if (shouldSwitch) {
-            shouldSwitch = false;
-            executeDelay = manualDelay.getValueInt();
+        BlockPos targetPos = getTargetPosition();
+        if (targetPos == null) return;
 
-            switch (manualStep) {
-                case 1:
-                    switchToItem(Items.TNT_MINECART);
-                    shouldExecute = true;
-                    break;
-                case 2:
-                    switchToItem(Items.FLINT_AND_STEEL);
-                    shouldExecute = true;
-                    break;
-                case 3:
-                    switchToItem(Items.CROSSBOW);
-                    manualStep = 0;
-                    break;
-            }
+        this.targetPos = targetPos;
+        isActive = true;
+        tickCounter = 0;
+        originalSlot = mc.player.getInventory().selectedSlot;
+    }
+
+    private void stopPlacing() {
+        if (!isActive) return;
+
+        if (autoSwitch.getValue() && originalSlot != -1) {
+            mc.player.getInventory().selectedSlot = originalSlot;
+        }
+
+        resetState();
+    }
+
+    private void resetState() {
+        isActive = false;
+        targetPos = null;
+        originalSlot = -1;
+        tickCounter = 0;
+        hasRail = false;
+        hasTntCart = false;
+
+        // reset delay cart
+        smallCartDelay = 0;
+    }
+
+    private void placeRail() {
+        if (hasRail) return;
+
+        int railSlot = findAnyRailInHotbar();
+        if (railSlot == -1) return;
+
+        mc.player.getInventory().selectedSlot = railSlot;
+        ((MinecraftClientAccessor) mc).invokeDoItemUse();
+        hasRail = true;
+    }
+
+    private void placeTntCart() {
+        if (hasTntCart) {
+            stopPlacing();
             return;
         }
 
-        if (shouldExecute) {
-            shouldExecute = false;
-            ((MinecraftClientAccessor) mc).invokeDoItemUse();
-        }
+        int tntCartSlot = findItemInHotbar();
+        if (tntCartSlot == -1) return;
 
-        if (manualStep == 2 && mc.player.getVehicle() == null) {
-            ItemStack stack = mc.player.getMainHandStack();
+        mc.player.getInventory().selectedSlot = tntCartSlot;
+        ((MinecraftClientAccessor) mc).invokeDoItemUse();
+        hasTntCart = true;
+    }
 
-            if (!stack.isEmpty() && stack.getItem() == Items.FLINT_AND_STEEL) {
-                HitResult hit = mc.crosshairTarget;
+    private BlockPos getTargetPosition() {
+        HitResult hitResult = mc.crosshairTarget;
+        if (hitResult == null) return null;
 
-                if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
-                    BlockHitResult bhr = (BlockHitResult) hit;
-                    BlockState state = mc.world.getBlockState(bhr.getBlockPos());
+        if (hitResult.getType() == HitResult.Type.BLOCK) {
+            BlockHitResult blockHit = (BlockHitResult) hitResult;
+            return blockHit.getBlockPos().offset(blockHit.getSide());
+        } 
+        else if (hitResult.getType() == HitResult.Type.ENTITY) {
+            return mc.player.getBlockPos().add(0, 1, 0);
+        } 
+        else {
+            Vec3d cameraPos = mc.player.getCameraPosVec(1.0f);
+            Vec3d rotation = mc.player.getRotationVec(1.0f);
+            Vec3d end = cameraPos.add(rotation.multiply(5.0));
 
-                    if (!isRailBlock(state.getBlock())) {
-                        ((MinecraftClientAccessor) mc).invokeDoItemUse();
-                        manualStep = 3;
-                        shouldSwitch = true;
-                    }
-                }
+            BlockHitResult blockHit = mc.world.raycast(new RaycastContext(
+                cameraPos, end, 
+                RaycastContext.ShapeType.OUTLINE, 
+                RaycastContext.FluidHandling.NONE, 
+                mc.player
+            ));
+
+            if (blockHit != null) {
+                return blockHit.getBlockPos().offset(blockHit.getSide());
+            } else {
+                return mc.player.getBlockPos().add(0, 1, 0);
             }
         }
     }
 
-    /* ===========================================================
-       ======================== UTILS =============================
-       =========================================================== */
-
-    private boolean isRailBlock(net.minecraft.block.Block block) {
-        return block == net.minecraft.block.Blocks.RAIL ||
-               block == net.minecraft.block.Blocks.POWERED_RAIL ||
-               block == net.minecraft.block.Blocks.DETECTOR_RAIL ||
-               block == net.minecraft.block.Blocks.ACTIVATOR_RAIL;
+    private int findItemInHotbar() {
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mc.player.getInventory().getStack(i);
+            if (!stack.isEmpty() && stack.getItem() == Items.TNT_MINECART) {
+                return i;
+            }
+        }
+        return -1;
     }
 
-    private boolean isRailItem(net.minecraft.item.Item item) {
+    private int findAnyRailInHotbar() {
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mc.player.getInventory().getStack(i);
+            if (!stack.isEmpty() && isRail(stack.getItem())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private boolean isRail(Item item) {
         return item == Items.RAIL ||
                item == Items.POWERED_RAIL ||
                item == Items.DETECTOR_RAIL ||
                item == Items.ACTIVATOR_RAIL;
     }
 
-    private boolean switchToItem(net.minecraft.item.Item item) {
-        for (int i = 0; i < 9; i++) {
-            ItemStack s = mc.player.getInventory().getStack(i);
-            if (!s.isEmpty() && s.getItem() == item) {
-                mc.player.getInventory().selectedSlot = i;
-                return true;
-            }
+    @Override
+    public void onEnable() {
+        resetState();
+    }
+
+    @Override
+    public void onDisable() {
+        if (isActive) {
+            stopPlacing();
         }
-        return false;
     }
 }
