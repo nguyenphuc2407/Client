@@ -56,25 +56,29 @@ public final class ModuleManager {
     private void addModules() {
         // Combat
         add(
-           new HitCob(), new StunCob(), new KeyLava(), new TriggerBot(), new AutoCart(),new XbowCart());
+           new AutoCart(),new XbowCart());
         // Movement
         add( 
            new Sprint(), new AutoFirework(), new AutoHeadHitter(), new KeepSprint(), new SnapTap());
 
         // Player
        add(
-           new PingSpoof(), new AutoDrain(), new AutoWeb(), new CoverUp(), new FastEXP());
+           new PingSpoof(), new AutoDrain(), new FastEXP());
 
         // Render
         add(   
-                new ArrayList(), new ContainerSlots());
+                new ContainerSlots(), new FullBright(), new Watermark(), new TargetHUD(),
+                new SwingSpeed(),
+                new Notifications(), new ArrowESP(), new OutlineESP(), new CustomOutlineESP(), new ESP2D(), new ESP3D(), new TargetESP(),
+                new ArrayList(), new Trajectories(), new BlurTest(), new AspectRatio(), new Nametags());
         // Misc
         add(
                 new MiddleClickFriend(),
-                new HoverTotem(), new Friends());
+                new Friends());
 
         // Client
-        add(new NewClickGUIModule(), new ClientSettingsModule(), new Client(), new Debugger(),
+        add(    
+                new NewClickGUIModule(), new ClientSettingsModule(), new Client(), new Debugger(),
                 new Secret(), new KeybindsModule());
     }
 
