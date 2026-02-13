@@ -33,15 +33,15 @@ public final class XbowCart extends Module {
 
     private final List<String> sequence = new ArrayList<>();
 
+    // AUTO Rail → TNT logic
+    private int railPhase = 0;   // 0 = place rail, 1 = delay, 2 = TNT
+    private int railDelay = 0;   // countdown
+
     // Manual mode
     private int manualStep = 0;
     private boolean shouldSwitch = false;
     private boolean shouldExecute = false;
     private int executeDelay = 0;
-
-    // AUTO MODE – 2 TICK RAIL → TNT
-    private int railPhase = 0;   // 0 = place rail, 1 = waiting delay, 2 = place TNT
-    private int railDelay = 0;   // countdown
 
     public XbowCart() {
         super("Xbow Cart", "Rail → TNT Cart automation", -1, Category.COMBAT);
@@ -59,7 +59,6 @@ public final class XbowCart extends Module {
         tickCounter = 0;
         actionIndex = 0;
 
-        // reset rail logic
         railPhase = 0;
         railDelay = 0;
 
@@ -77,7 +76,7 @@ public final class XbowCart extends Module {
     }
 
     /* ===========================================================
-       ===============       AUTO MODE TICK       =================
+       =====================  AUTO MODE  ==========================
        =========================================================== */
 
     @EventHandler
@@ -100,7 +99,8 @@ public final class XbowCart extends Module {
 
         String action = sequence.get(actionIndex);
 
-        executeAction(action);   // gọi mỗi tick để railPhase hoạt động
+        // FIX CHÍNH: luôn chạy mỗi tick
+        executeAction(action);
 
         tickCounter++;
         if (tickCounter > delay.getValueInt()) {
@@ -110,7 +110,7 @@ public final class XbowCart extends Module {
     }
 
     /* ===========================================================
-       ===============       EXECUTE ACTION       =================
+       ==================  EXECUTE ACTION  ========================
        =========================================================== */
 
     private void executeAction(String action) {
@@ -123,10 +123,10 @@ public final class XbowCart extends Module {
             return;
         }
 
-        /* ---------- 2-TICK RAIL → TNT ---------- */
+        /* ---------- RAIL → 2 TICK → TNT CART ---------- */
         if (action.equals("Rail")) {
 
-            // Step 1 — Place Rail
+            // STEP 1 — place rail
             if (railPhase == 0) {
                 if (switchToItem(Items.RAIL) ||
                     switchToItem(Items.POWERED_RAIL) ||
@@ -136,12 +136,12 @@ public final class XbowCart extends Module {
                     ((MinecraftClientAccessor) mc).invokeDoItemUse();
 
                     railPhase = 1;
-                    railDelay = 2;     // chờ 2 tick trước khi đặt TNT
+                    railDelay = 2;  // fixed 2 tick delay for TNT
                 }
                 return;
             }
 
-            // Step 2 — Delay 2 ticks
+            // STEP 2 — wait ticks
             if (railPhase == 1) {
                 if (railDelay > 0) {
                     railDelay--;
@@ -150,18 +150,18 @@ public final class XbowCart extends Module {
                 railPhase = 2;
             }
 
-            // Step 3 — Place TNT Minecart
+            // STEP 3 — place TNT minecart
             if (railPhase == 2) {
                 if (switchToItem(Items.TNT_MINECART)) {
                     ((MinecraftClientAccessor) mc).invokeDoItemUse();
                 }
-                railPhase = 0;  // reset
+                railPhase = 0; // reset
             }
         }
     }
 
     /* ===========================================================
-       ===============       MANUAL MODE        ===================
+       =====================  MANUAL MODE  ========================
        =========================================================== */
 
     @EventHandler
@@ -172,28 +172,24 @@ public final class XbowCart extends Module {
         if (stack.isEmpty()) return;
 
         switch (manualStep) {
-
             case 0:
                 if (isRailItem(stack.getItem())) {
                     manualStep = 1;
                     shouldSwitch = true;
                 }
                 break;
-
             case 1:
                 if (stack.getItem() == Items.TNT_MINECART) {
                     manualStep = 2;
                     shouldSwitch = true;
                 }
                 break;
-
             case 2:
                 if (stack.getItem() == Items.FLINT_AND_STEEL) {
                     manualStep = 3;
                     shouldSwitch = true;
                 }
                 break;
-
             case 3:
                 if (isRailItem(stack.getItem())) {
                     manualStep = 1;
@@ -237,9 +233,10 @@ public final class XbowCart extends Module {
 
         if (manualStep == 2 && mc.player.getVehicle() == null) {
             ItemStack stack = mc.player.getMainHandStack();
-            if (!stack.isEmpty() && stack.getItem() == Items.FLINT_AND_STEEL) {
 
+            if (!stack.isEmpty() && stack.getItem() == Items.FLINT_AND_STEEL) {
                 HitResult hit = mc.crosshairTarget;
+
                 if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
                     BlockHitResult bhr = (BlockHitResult) hit;
                     BlockState state = mc.world.getBlockState(bhr.getBlockPos());
@@ -255,7 +252,7 @@ public final class XbowCart extends Module {
     }
 
     /* ===========================================================
-       ===============       UTILITIES           ==================
+       ======================== UTILS =============================
        =========================================================== */
 
     private boolean isRailBlock(net.minecraft.block.Block block) {
