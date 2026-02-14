@@ -5,7 +5,7 @@ import cc.silk.event.impl.world.WorldChangeEvent;
 import cc.silk.mixin.MinecraftClientAccessor;
 import cc.silk.module.Category;
 import cc.silk.module.Module;
-import cc.silk.module.modules.misc.Teams;
+// import cc.silk.module.modules.misc.Teams;  // ❌ XOÁ
 import cc.silk.module.setting.BooleanSetting;
 import cc.silk.module.setting.ModeSetting;
 import cc.silk.module.setting.RangeSetting;
@@ -299,10 +299,7 @@ public final class TriggerBot extends Module {
         if (en == mc.player || en == mc.cameraEntity || !en.isAlive())
             return false;
 
-        // ✔️ FRIEND CHECK ĐÃ XOÁ TOÀN BỘ
-
-        if (Teams.isTeammate(en))
-            return false;
+        // ❌ XOÁ FRIEND + TEAM CHECK HOÀN TOÀN
 
         if (en instanceof WindChargeEntity)
             return false;
